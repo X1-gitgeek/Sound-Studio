@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Studio - 3D HRTF Music Player</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Playfair+Display&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/player.css">
+</head>
+<body class="theme-obsidian">
+    <div id="app">
+        <!-- Main 3D WebGL Canvas for Visualizer -->
+        <canvas id="visualizer-canvas"></canvas>
+
+        <!-- Dynamic Background for Liquid Glass Theme -->
+        <div id="liquid-glass-bg"></div>
+
+        <!-- Top Bar: Settings / Folders -->
+        <header class="top-bar glass-panel">
+            <h1 class="logo">Sound Studio.</h1>
+            <div class="header-controls">
+                <button id="btn-load-folder" class="btn primary">Load Folder</button>
+                <button id="btn-load-file" class="btn secondary">Load File</button>
+            </div>
+        </header>
+
+        <!-- Left Menu: Audio FX & Spatial Controls -->
+        <aside class="side-menu left-menu glass-panel panel-collapsible">
+            <div class="panel-header">
+                <h2>Audio Engine</h2>
+                <button class="btn-collapse">_</button>
+            </div>
+            
+            <!-- EQ / Dynamics -->
+            <section class="fx-section">
+                <h3>Dynamics Controller</h3>
+                <div class="slider-group">
+                    <label>Highs (Air) <span class="val" id="val-eq-highs">0dB</span></label>
+                    <input type="range" id="eq-highs" min="-24" max="24" value="0">
+                </div>
+                <div class="slider-group">
+                    <label>Mids (Voice) <span class="val" id="val-eq-mids">0dB</span></label>
+                    <input type="range" id="eq-mids" min="-24" max="24" value="0">
+                </div>
+                <div class="slider-group">
+                    <label>Deep Bass <span class="val" id="val-eq-bass">0dB</span></label>
+                    <input type="range" id="eq-bass" min="-24" max="24" value="0">
+                </div>
+                <div class="slider-group">
+                    <label>HPF Filter <span class="val" id="val-eq-hpf">0Hz</span></label>
+                    <input type="range" id="eq-hpf" min="0" max="20000" value="0">
+                </div>
+            </section>
+
+            <!-- Reverb -->
+            <section class="fx-section">
+                <h3>Studio Reverb</h3>
+                <div class="slider-group">
+                    <label>Room Size <span class="val" id="val-rev-size">50%</span></label>
+                    <input type="range" id="rev-size" min="0" max="100" value="50">
+                </div>
+                <div class="slider-group">
+                    <label>Mix (Dry/Wet) <span class="val" id="val-rev-mix">20%</span></label>
+                    <input type="range" id="rev-mix" min="0" max="100" value="20">
+                </div>
+                <div class="slider-group">
+                    <label>Decay Time <span class="val" id="val-rev-decay">2.0s</span></label>
+                    <input type="range" id="rev-decay" min="0" max="100" value="50">
+                </div>
+                <div class="slider-group">
+                    <label>Decay Brightness <span class="val" id="val-rev-bright">50%</span></label>
+                    <input type="range" id="rev-bright" min="0" max="100" value="50">
+                </div>
+            </section>
+
+            <!-- Stereo Width -->
+            <section class="fx-section">
+                <h3>Stereo Output</h3>
+                <div class="slider-group">
+                    <label>Width Mastering <span class="val" id="val-width">100%</span></label>
+                    <input type="range" id="width" min="0" max="200" value="100">
+                </div>
+            </section>
+        </aside>
+
+        <!-- Right Menu: Time/Pitch & Theming -->
+        <aside class="side-menu right-menu glass-panel panel-collapsible">
+            <div class="panel-header">
+                <h2>Time & Space</h2>
+                <button class="btn-collapse">_</button>
+            </div>
+
+            <!-- Pitch/Time -->
+            <section class="fx-section">
+                <h3>Time & Pitch Shift</h3>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="link-pitch-time">
+                    <label for="link-pitch-time">Link Pitch & Time</label>
+                </div>
+                <div class="slider-group">
+                    <label>Playback Speed <span class="val" id="val-speed">1.0x</span></label>
+                    <input type="range" id="speed" min="0.1" max="2.0" step="0.01" value="1.0">
+                </div>
+                <div class="slider-group">
+                    <label>Pitch Shift <span class="val" id="val-pitch">0</span></label>
+                    <input type="range" id="pitch" min="-12" max="12" step="0.1" value="0">
+                </div>
+            </section>
+
+            <!-- Spatial 3D / HRTF -->
+            <section class="fx-section">
+                <h3>HRTF Spatial 3D</h3>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="auto-float-mode">
+                    <label for="auto-float-mode">Auto-Float Mode (8D)</label>
+                </div>
+                <div id="spatial-manual-controls" class="expanded-menu">
+                    <div class="slider-group">
+                        <label>X-Axis <span class="val" id="val-spatial-x">0</span></label>
+                        <input type="range" id="spatial-x" min="-10" max="10" step="0.1" value="0">
+                    </div>
+                    <div class="slider-group">
+                        <label>Y-Axis <span class="val" id="val-spatial-y">0</span></label>
+                        <input type="range" id="spatial-y" min="-10" max="10" step="0.1" value="0">
+                    </div>
+                    <div class="slider-group">
+                        <label>Z-Axis <span class="val" id="val-spatial-z">0</span></label>
+                        <input type="range" id="spatial-z" min="-10" max="10" step="0.1" value="0">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Themes & Export -->
+            <section class="fx-section themes-section">
+                <h3>Design Science</h3>
+                <div class="theme-selector">
+                    <button class="theme-btn" data-theme="sepia">Sepia</button>
+                    <button class="theme-btn active" data-theme="obsidian">Obsidian</button>
+                    <button class="theme-btn" data-theme="white-marble">Marble</button>
+                    <button class="theme-btn" data-theme="liquid-glass">Liquid</button>
+                </div>
+                <div class="accent-selector" id="accent-colors">
+                    <!-- Color swatches generated via JS -->
+                </div>
+            </section>
+        </aside>
+
+        <!-- Bottom Player Bar -->
+        <footer class="player-bar glass-panel expandable-player">
+            <div class="player-cover">
+                <img id="cover-img" src="" alt="Cover" style="display:none;">
+                <div class="cover-placeholder">♪</div>
+            </div>
+            
+            <div class="player-controls">
+                <div class="track-info">
+                    <h4 id="track-title">No Track Loaded</h4>
+                    <p id="track-artist">Select a file or folder to begin</p>
+                </div>
+                
+                <div class="playback-buttons">
+                    <button id="btn-prev" class="btn-icon">⏮</button>
+                    <button id="btn-play" class="btn-icon btn-main">▶</button>
+                    <button id="btn-next" class="btn-icon">⏭</button>
+                </div>
+                
+                <div class="seek-bar-container">
+                    <span id="time-current">0:00</span>
+                    <input type="range" id="seek-bar" min="0" max="100" value="0">
+                    <span id="time-total">0:00</span>
+                </div>
+            </div>
+            
+            <div class="player-extras">
+                <div class="volume-control">
+                    <span class="icon">🔊</span>
+                    <input type="range" id="volume-fader" min="0" max="100" value="80">
+                </div>
+                <button id="btn-export" class="btn primary">Export Audio</button>
+                <button id="btn-expand-player" class="btn-icon">⛶</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Load Three.js from CDN for 3D Visualizer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
